@@ -1,10 +1,16 @@
 const Product = require("../models/product");
 
-const validateCreateProduct = (req, res, next) => {
+const validateCreateProduct = async (req, res, next) => {
   const { id, name, price, category, stock } = req.body;
 
   if (!id || !name || !price || !category || !stock) {
     return res.json({ message: "All fields required" });
+  }
+
+  const existing = await Product.findOne({ name });
+
+  if (existing) {
+    return res.json({ message: "Product already exists" });
   }
 
   next();
@@ -31,4 +37,9 @@ const checkProductExists = async (req, res, next) => {
 
   next();
 };
-module.exports={validateUpdateProduct, validateCreateProduct, checkProductExists}
+
+module.exports = {
+  validateUpdateProduct,
+  validateCreateProduct,
+  checkProductExists,
+};

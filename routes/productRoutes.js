@@ -3,9 +3,10 @@ const router = express.Router();
 
 const {getAllProducts, addNewProduct, updateProduct, deleteProduct} = require("../controllers/productController")
 const {validateCreateProduct, validateUpdateProduct, checkProductExists } = require("../middlewares/validateProduct")
-router.get("/", getAllProducts);
-router.post("/", validateCreateProduct, addNewProduct)
-router.put("/:id", validateUpdateProduct , updateProduct)
-router.delete("/:id", checkProductExists, deleteProduct)
+const {authMiddleware, adminMiddleware}  = require("../middlewares/authMiddleware")
+router.get("/", authMiddleware , getAllProducts);
+router.post("/", authMiddleware , adminMiddleware, validateCreateProduct, addNewProduct)
+router.put("/:id", authMiddleware , adminMiddleware, validateUpdateProduct , updateProduct)
+router.delete("/:id", authMiddleware , adminMiddleware, checkProductExists, deleteProduct)
 
 module.exports = router;
