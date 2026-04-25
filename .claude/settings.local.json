@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check server.js)",
+      "Bash(node --check controllers/authController.js)",
+      "Bash(node --check controllers/productController.js)",
+      "Bash(node --check controllers/userController.js)",
+      "Bash(node --check controllers/categoryController.js)"
+    ]
+  }
+}

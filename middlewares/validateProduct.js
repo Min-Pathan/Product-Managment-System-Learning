@@ -1,25 +1,31 @@
-const Product = require("../models/product");
+import pool from "../config/db.js";
 
 const validateCreateProduct = async (req, res, next) => {
-  const { id, name, price, category, stock } = req.body;
+  try {
+    const { name, price, category, stock } = req.body;
 
-  if (!id || !name || !price || !category || !stock) {
-    return res.json({ message: "All fields required" });
+    if (!name || !price || !category || stock === undefined) {
+      return res.json({ message: "All fields required" });
+    }
+
+    const existing = await pool.query(
+      "SELECT id FROM products WHERE name ILIKE $1",
+      [name]
+    );
+    if (existing.rows.length > 0) {
+      return res.json({ message: "Product already exists" });
+    }
+
+    next();
+  } catch (err) {
+    res.json({ error: err.message });
   }
-
-  const existing = await Product.findOne({ name });
-
-  if (existing) {
-    return res.json({ message: "Product already exists" });
-  }
-
-  next();
 };
 
 const validateUpdateProduct = (req, res, next) => {
   const { name, price, category, stock } = req.body;
 
-  if (!name && !price && !category && !stock) {
+  if (!name && !price && !category && stock === undefined) {
     return res.json({ message: "At least one field required" });
   }
 
@@ -27,19 +33,19 @@ const validateUpdateProduct = (req, res, next) => {
 };
 
 const checkProductExists = async (req, res, next) => {
-  const id = parseInt(req.params.id);
-
-  const product = await Product.findOne({ id });
-
-  if (!product) {
-    return res.json({ message: "Product not found" });
+  try {
+    const id = parseInt(req.params.id);
+    const result = await pool.query(
+      "SELECT id FROM products WHERE id = $1",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.json({ message: "Product not found" });
+    }
+    next();
+  } catch (err) {
+    res.json({ error: err.message });
   }
-
-  next();
 };
 
-module.exports = {
-  validateUpdateProduct,
-  validateCreateProduct,
-  checkProductExists,
-};
+export { validateUpdateProduct, validateCreateProduct, checkProductExists };

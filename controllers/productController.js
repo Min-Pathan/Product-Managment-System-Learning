@@ -1,74 +1,27 @@
-const Product = require("../models/product");
-const Category = require("../models/category")
+import pool from "../config/db.js";
+
 const getAllProducts = async (req, res) => {
   try {
-    const {
-      keyword,
-      sortBy = "id",
-      order = "asc",
-      page = 1,
-      limit = 5,
-      category
-    } = req.query;
-    let filters = {};
-    let categoryFilters = {};
-    const allowedfield = ["id", "name", "price", "category", "stock"];
-    const finalSortby = allowedfield.includes(sortBy) ? sortBy : "id";
-    const findCategory = await Category.findOne({
-      name: { $regex: category, $options: "i" } 
-    })
-    if(category){
-      const foundCategory = await Category.findOne({
-        name:{$regex:category, $options : "i"}
-      })
-      if(foundCategory)
-      {
-        categoryFilters.category = foundCategory._id;
-      }
-      else{
-        res.json({mesg:"category not found"})
-      }
-    }
-    if (keyword) {
-      filters.$or = [
-        { name: { $regex: keyword, $options: "i" } },
-        { id: isNaN(keyword) ? undefined : parseInt(keyword) },
-        { price: isNaN(keyword) ? undefined : parseInt(keyword) },
-           findCategory ? { category: findCategory._id } : null,
-        { stock: isNaN(keyword) ? undefined : parseInt(keyword) },
-      ].filter(Boolean);
-    }
-    const sortOrder = order === "desc" ? -1 : 1;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const finalFilters ={...filters, ...categoryFilters}
-    const products = await Product.find(finalFilters)
-    .populate("category", "name", )
-      .collation({ locale: "en", strength: 2 })
-      .sort({
-        [finalSortby]: sortOrder,
-      })
-      .skip(skip)
-      .limit(parseInt(limit));
-    const total = await Product.countDocuments(finalFilters);
-    res.json({
-      total: total,
-      page: Number(page),
-      limit: Number(limit),
-      data: products,
-    });
+    const result = await pool.query("select * from products");
+    res.json(result.rows);
   } catch (err) {
-    res.json({ err: err.message });
+    res.json({ error: err.message });
   }
 };
 
-const addNewProduct = async (req, res) => {
+const craeteProduct = async (req, res) => {
   try {
-    const data = req.body;
-    const productData = new Product(data);
-    await productData.save();
+    const { name, price, category, stock } = req.body;
+    if (!name || !price || !category || !stock) {
+      return res.json({ msg: "Invalid data" });
+    }
+    const result = await pool.query(
+      "insert into products (name, price, category, stock) values ($1, $2, $3, $4) returning *",
+      [name, price, category, stock],
+    );
     res.json({
-      msg: "Product added",
-      data: productData,
+      msg: "Product created",
+      data: result.rows[0],
     });
   } catch (err) {
     res.json({ err: err.message });
@@ -77,31 +30,66 @@ const addNewProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    const updatedData = req.body;
-    const pr = await Product.findOneAndUpdate({ id: parseInt(id) }, updatedData, {
-      new: true,
-    });
-    res.json({
+    const id = req.params.id;
+    const { name, price, category, stock } = req.body;
+    const result = await pool.query(
+      `update products set name=$1, price=$2, category=$3, stock=$4 where id=$5 returning *`,
+      [name, price, category, stock, id],
+    );
+    if (result.rows.length === 0) {
+      return res.json({ msg: "Product not found" });
+    }
+
+    res.status(200).json({
       msg: "Product updated",
-      data: pr,
+      data: result.rows[0],
     });
   } catch (err) {
     res.json({ err: err.message });
   }
 };
 
-const deleteProduct = async(req, res)=>{
-    try{
-        const id = req.params.id;
-        const deletedProduct = await Product.findOneAndDelete({id: parseInt(id)})
-        res.json({
-            msg:"deleted successfully"
-        })
+const deleteProduct = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await pool.query(
+      "Delete from products where id=$1 returning *",
+      [id],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        msg: "Product not found",
+      });
     }
-    catch(error){
-        res.json({error:error.message})
-    }
-}
 
-module.exports = { getAllProducts, addNewProduct , updateProduct, deleteProduct};
+    res.status(200).json({
+      msg: "Product deleted",
+      data: result.rows[0],
+    });
+  } catch (err) {
+    res.status(500).json({ message:"server error",err: err.message });
+  }
+};
+
+const getProductById = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await pool.query(
+      "select id, name, price from products where id=$1",
+      [id],
+    );
+    if (result.rows.length === 0) {
+      return res.json({ err: "Product not found" });
+    }
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    req.json({ err: err.message });
+  }
+};
+export {
+  getAllProducts,
+  craeteProduct,
+  updateProduct,
+  deleteProduct,
+  getProductById,
+};

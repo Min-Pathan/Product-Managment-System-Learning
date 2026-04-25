@@ -1,9 +1,9 @@
-const User = require("../models/user");
+import pool from "../config/db.js";
 
 const getallUsers = async (req, res) => {
   try {
-    const users = await User.find();
-    res.json(users);
+    const result = await pool.query("SELECT * from users");
+    res.json(result.rows);
   } catch (err) {
     res.json({ err: err.message });
   }
@@ -11,63 +11,57 @@ const getallUsers = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const data = req.body;
     const id = req.params.id;
-    if (!id) {
-      return res.json({ err: "invalid user" });
+    const { name, password, email, role } = req.body;
+    const result = await pool.query(
+      `update users set name=$1, password=$2, email=$3, role=$4 where id=$5 returning *`,
+      [name, password, email, role, id]
+    );
+    if (result.rows.length === 0) {
+      return res.json({ msg: "User not found" });
     }
-    const userExists = await User.findOne({id:id})
-        if(!userExists)
-        {
-            return res.json({error:"User not found"})
-        }
-    const user = await User.findByIdAndUpdate(id, data, {
-      new: true,
-    });
+
     res.json({
       msg: "User updated",
-      data: user,
+      data: result.rows[0],
     });
   } catch (err) {
     res.json({ err: err.message });
   }
 };
 
+const deleteUser = async(req, res)=>{
+   try {
+    const id = req.params.id;
+    const result = await pool.query("Delete from users where id=$1 returning *", [id])
+    if (result.rows.length === 0) {
+      return res.json({ msg: "user not found" });
+    }
 
-const userDelete = async(req, res)=>{
-    try{
-        const id = req.params.id;
-        const userExists = await User.findOne({id:id})
-        if(!userExists)
-        {
-            return res.json({error:"User not found"})
-        }
-        const deletedUser = await User.findOneAndDelete({id: parseInt(id)})
-        res.json({
-            msg:"deleted successfully"
-        })
-    }
-    catch(error){
-        res.json({error:error.message})
-    }
+    res.json({
+      msg: "user deleted",
+      data: result.rows[0],
+    });
+   }
+   catch(err){
+    req.json({err: err.message})
+   }
 }
 
-const getUserById = async (req, res)=>{
-    try
-    {
-        const id = req.params.id;
-        const user = await User.findById(id);
-          if (!user) {
+const getUserById = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const result = await pool.query(
+      "SELECT id, name, email, role FROM users WHERE id = $1",
+      [id]
+    );
+    if (result.rows.length === 0) {
       return res.json({ msg: "User not found" });
     }
+    res.json({ data: result.rows[0] });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+};
 
-        res.json({
-            data:user
-        })
-    }
-    catch(error){
-        res.json({error:error.message})
-    }
-}
-
-module.exports = { getallUsers, updateUser, userDelete, getUserById};
+export { getallUsers, updateUser, deleteUser, getUserById };

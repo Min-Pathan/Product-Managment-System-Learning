@@ -1,24 +1,29 @@
-const User = require("../models/user");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+import pool from "../config/db.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    const existing = await User.findOne({ email });
-    if (existing) {
+
+    const existing = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+    if (existing.rows.length > 0) {
       return res.json({ msg: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = User({
-      name,
-      email,
-      password: hashedPassword,
-      role: role || "user",
-    });
-    await user.save();
-    res.json({ msg: "User registered", data: user });
+
+    const result = await pool.query(
+      `INSERT INTO users (name, email, password, role)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, email, role`,
+      [name, email, hashedPassword, role || "user"]
+    );
+
+    res.json({ msg: "User registered", data: result.rows[0] });
   } catch (err) {
     res.json({ error: err.message });
   }
@@ -27,25 +32,37 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) {
+
+    const result = await pool.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+    if (result.rows.length === 0) {
       return res.json({ msg: "User not found" });
     }
+    const user = result.rows[0];
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.json({ msg: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, "secretkey", {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.json({
       msg: "login successful",
       token,
       data: {
-        user,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
       },
     });
   } catch (err) {
@@ -53,4 +70,4 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login};
+export { register, login };

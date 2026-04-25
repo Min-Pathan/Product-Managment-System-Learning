@@ -1,28 +1,28 @@
-const express = require("express");
+import dotenv from "dotenv"
+import express from "express";
+import pool from "./config/db.js";
+import logger from "./middlewares/logger.js";
+import productRouter from "./routes/productRoutes.js";
+import categoryRouter from "./routes/categoryRoutes.js";
+import authRouter from "./routes/authRoute.js";
+import userRouter from "./routes/userroutes.js";
+
 const app = express();
 app.use(express.json());
 
-const logger = require("./middlewares/logger")
+dotenv.config()
+
 app.use(logger);
 
-const productRouter = require("./routes/productRoutes")
-app.use("/api/products", productRouter)
+app.use("/api/products", productRouter);
+app.use("/api/category", categoryRouter);
+app.use("/api/auth", authRouter);
+app.use("/users", userRouter);
 
-const categoryRouter = require("./routes/categoryRoutes");
-app.use("/api/category", categoryRouter)
-
-const authRouter = require("./routes/authRoute");
-app.use("/api/auth", authRouter)
-
-const userRouter = require("./routes/userroutes");
-app.use("/users", userRouter)
-
-const mongoose = require("mongoose");
-
-mongoose.connect("mongodb+srv://admin:admin@cluster0.0zct9gw.mongodb.net/")
-  .then(() => console.log("MongoDB Connected ✅"))
+pool.connect()
+  .then(() => console.log("PostgreSQL Connected ✅"))
   .catch((err) => console.log(err));
-  
-app.listen(3002, ()=>{
-    console.log("server started")
-})
+
+app.listen(3002, () => {
+  console.log("server started");
+});

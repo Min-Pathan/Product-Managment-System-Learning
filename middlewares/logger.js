@@ -1,5 +1,5 @@
-const logger = (req, res, next)=>{
-    next()
-}
+const logger = (req, res, next) => {
+  next();
+};
 
-module.exports = logger
+export default logger;
