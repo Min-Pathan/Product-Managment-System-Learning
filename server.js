@@ -6,12 +6,14 @@ import productRouter from "./routes/productRoutes.js";
 import categoryRouter from "./routes/categoryRoutes.js";
 import authRouter from "./routes/authRoute.js";
 import userRouter from "./routes/userroutes.js";
+import initDB from "./config/initDB.js";
 
 const app = express();
 app.use(express.json());
 
 dotenv.config()
-
+initDB();
+ 
 app.use(logger);
 
 app.use("/api/products", productRouter);

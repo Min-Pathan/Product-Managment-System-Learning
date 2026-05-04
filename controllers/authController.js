@@ -1,8 +1,9 @@
 import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { findUserByEmail } from "../models/userModel.js";
 
-const register = async (req, res) => {
+const registerController = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -33,10 +34,7 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
+    const result = await findUserByEmail(email)
     if (result.rows.length === 0) {
       return res.json({ msg: "User not found" });
     }
@@ -50,7 +48,7 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
 
     res.json({
@@ -70,4 +68,4 @@ const login = async (req, res) => {
   }
 };
 
-export { register, login };
+export { registerController, login };

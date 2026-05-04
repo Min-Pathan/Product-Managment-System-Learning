@@ -2,9 +2,9 @@ import pool from "../config/db.js";
 
 const validateCreateProduct = async (req, res, next) => {
   try {
-    const { name, price, category, stock } = req.body;
+    const { name, price, category_id, stock } = req.body;
 
-    if (!name || !price || !category || stock === undefined) {
+    if (!name || !price || !category_id || stock === undefined) {
       return res.json({ message: "All fields required" });
     }
 
@@ -23,9 +23,9 @@ const validateCreateProduct = async (req, res, next) => {
 };
 
 const validateUpdateProduct = (req, res, next) => {
-  const { name, price, category, stock } = req.body;
+  const { name, price, category_id, stock } = req.body;
 
-  if (!name && !price && !category && stock === undefined) {
+  if (!name && !price && !category_id && stock === undefined) {
     return res.json({ message: "At least one field required" });
   }
 

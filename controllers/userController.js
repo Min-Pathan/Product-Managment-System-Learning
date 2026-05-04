@@ -1,4 +1,10 @@
-import pool from "../config/db.js";
+import {
+  fetchUsers,
+  fetchUserCount,
+  updateUser as updateUserDb,
+  deleteUser as deleteUserDb,
+  getUserById as getUserByIdDb,
+} from "../models/userModel.js";
 
 const getallUsers = async (req, res) => {
   try {
@@ -34,10 +40,9 @@ const getallUsers = async (req, res) => {
       ORDER BY ${finalSortBy} ${sortOrder}
       LIMIT $${valueIndex} OFFSET $${valueIndex + 1}
     `;
-    values.push(limit, offset);
 
-    const result = await pool.query(query, values);
-    const countResult = await pool.query("SELECT COUNT(*) FROM users");
+    const result = await fetchUsers(query, [...values, limit, offset]);
+    const countResult = await fetchUserCount("SELECT COUNT(*) FROM users", []);
     const total = parseInt(countResult.rows[0].count);
     res.json({
       total,
@@ -54,10 +59,7 @@ const updateUser = async (req, res) => {
   try {
     const id = req.params.id;
     const { name, password, email, role } = req.body;
-    const result = await pool.query(
-      `update users set name=$1, password=$2, email=$3, role=$4 where id=$5 returning *`,
-      [name, password, email, role, id],
-    );
+    const result = await updateUserDb({ name, password, email, role }, id);
     if (result.rows.length === 0) {
       return res.json({ msg: "User not found" });
     }
@@ -74,10 +76,7 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const id = req.params.id;
-    const result = await pool.query(
-      "Delete from users where id=$1 returning *",
-      [id],
-    );
+    const result = await deleteUserDb(id);
     if (result.rows.length === 0) {
       return res.json({ msg: "user not found" });
     }
@@ -87,17 +86,14 @@ const deleteUser = async (req, res) => {
       data: result.rows[0],
     });
   } catch (err) {
-    req.json({ err: err.message });
+    res.json({ err: err.message });
   }
 };
 
 const getUserById = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const result = await pool.query(
-      "SELECT id, name, email, role FROM users WHERE id = $1",
-      [id],
-    );
+    const result = await getUserByIdDb(id);
     if (result.rows.length === 0) {
       return res.json({ msg: "User not found" });
     }
