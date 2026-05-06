@@ -37,7 +37,6 @@ const initDB = async () => {
         price NUMERIC(10,2)
       );
     `);
-
     console.log("✅ Tables ready");
   } catch (err) {
     console.error("❌ DB init error:", err.message);

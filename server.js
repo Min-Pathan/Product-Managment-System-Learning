@@ -6,6 +6,7 @@ import productRouter from "./routes/productRoutes.js";
 import categoryRouter from "./routes/categoryRoutes.js";
 import authRouter from "./routes/authRoute.js";
 import userRouter from "./routes/userroutes.js";
+import orderRouter from "./routes/orderRoute.js"
 import initDB from "./config/initDB.js";
 
 const app = express();
@@ -20,6 +21,7 @@ app.use("/api/products", productRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/auth", authRouter);
 app.use("/users", userRouter);
+app.use("/orders", orderRouter)
 
 pool.connect()
   .then(() => console.log("PostgreSQL Connected ✅"))
